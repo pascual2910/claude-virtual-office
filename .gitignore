@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .DS_Store
+vscode-extension/out/
+vscode-extension/node_modules/
+*.vsix
