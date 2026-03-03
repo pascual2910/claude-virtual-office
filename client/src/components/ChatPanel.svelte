@@ -1,11 +1,29 @@
 <script lang="ts">
-  import { officeState } from '../state/store.svelte';
+  import { officeState, selection } from '../state/store.svelte';
+  import { sendMessageToAgent, wakeAgent } from '../state/api-client';
   import type { ChatMessage } from '../../../shared/types';
 
   type FilterType = 'all' | 'messages' | 'tools' | 'system';
 
   let activeFilter: FilterType = $state('all');
   let scrollContainer: HTMLDivElement;
+  let messageText = $state('');
+  let targetAgent = $state('');
+
+  // Auto-select agent when clicked in canvas
+  $effect(() => {
+    if (selection.agentId) {
+      const agent = officeState.agents.find(a => a.id === selection.agentId);
+      if (agent) targetAgent = agent.name;
+    }
+  });
+
+  // Default to first agent if none selected
+  $effect(() => {
+    if (!targetAgent && officeState.agents.length > 0) {
+      targetAgent = officeState.agents[0].name;
+    }
+  });
 
   let filteredMessages = $derived(
     officeState.chatLog.filter((msg: ChatMessage) => {
@@ -18,10 +36,8 @@
   );
 
   $effect(() => {
-    // Auto-scroll on new messages
     const _len = filteredMessages.length;
     if (scrollContainer) {
-      // Use a microtask to ensure DOM is updated
       queueMicrotask(() => {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       });
@@ -43,6 +59,31 @@
     }
     const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
     return colors[Math.abs(hash) % colors.length];
+  }
+
+  async function handleSend() {
+    const text = messageText.trim();
+    if (!text || !targetAgent || !officeState.teamName) return;
+    messageText = '';
+    try {
+      await sendMessageToAgent(officeState.teamName, targetAgent, text);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  }
+
+  async function handleWake(agentName: string) {
+    if (!officeState.teamName) return;
+    try {
+      await wakeAgent(officeState.teamName, agentName);
+    } catch (err) {
+      console.error('Failed to wake agent:', err);
+    }
+  }
+
+  function extractIdleAgent(content: string): string | null {
+    const match = content.match(/^(.+?) went idle$/);
+    return match ? match[1] : null;
   }
 
   const filters: { key: FilterType; label: string }[] = [
@@ -91,7 +132,18 @@
             <span class="text-gray-400 font-mono">{msg.content}</span>
           </p>
         {:else if msg.type === 'system'}
-          <p class="flex-1 text-xs text-gray-600 text-center">{msg.content}</p>
+          {@const idleAgent = extractIdleAgent(msg.content)}
+          <div class="flex-1 flex items-center justify-center gap-2">
+            <p class="text-xs text-gray-600">{msg.content}</p>
+            {#if idleAgent}
+              <button
+                class="wake-button"
+                onclick={() => handleWake(idleAgent)}
+              >
+                Wake
+              </button>
+            {/if}
+          </div>
         {/if}
       </div>
     {:else}
@@ -100,6 +152,36 @@
       </div>
     {/each}
   </div>
+
+  <!-- Message input -->
+  {#if officeState.agents.length > 0}
+    <div class="chat-input-area">
+      <div class="flex items-center gap-2 mb-1.5">
+        <label class="text-[10px] text-gray-500 uppercase tracking-wider">To:</label>
+        <select bind:value={targetAgent} class="agent-select">
+          {#each officeState.agents as agent}
+            <option value={agent.name}>{agent.name}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <input
+          type="text"
+          bind:value={messageText}
+          placeholder="Send message to agent..."
+          class="chat-input"
+          onkeydown={(e) => e.key === 'Enter' && handleSend()}
+        />
+        <button
+          onclick={handleSend}
+          class="send-button"
+          disabled={!messageText.trim()}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -140,5 +222,84 @@
   .chat-message.system {
     justify-content: center;
     opacity: 0.7;
+  }
+
+  .wake-button {
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .wake-button:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.5);
+  }
+
+  .chat-input-area {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(51, 65, 85, 0.4);
+  }
+
+  .agent-select {
+    flex: 1;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: #e2e8f0;
+    outline: none;
+  }
+
+  .agent-select:focus {
+    border-color: #3b82f6;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    color: #e2e8f0;
+    outline: none;
+  }
+
+  .chat-input:focus {
+    border-color: #3b82f6;
+  }
+
+  .chat-input::placeholder {
+    color: #64748b;
+  }
+
+  .send-button {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: #3b82f6;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .send-button:hover:not(:disabled) {
+    background: #2563eb;
+  }
+
+  .send-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 </style>

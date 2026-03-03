@@ -8,6 +8,7 @@ import type { ChatMessage, TaskState, WsMessage } from '../shared/types.js';
 import { StateManager } from './state-manager.js';
 import { FileWatcher } from './file-watcher.js';
 import { createHooksRouter } from './hooks-handler.js';
+import { InboxWriter } from './inbox-writer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -42,6 +43,57 @@ export async function startServer(options: ServerOptions): Promise<void> {
   app.get('/api/teams', async (_req, res) => {
     const teams = await fileWatcher.scanForTeams();
     res.json({ teams });
+  });
+
+  // Inbox writer for sending messages to agents
+  const inboxWriter = new InboxWriter(claudeDir);
+
+  app.post('/api/send-message', async (req, res) => {
+    const { teamName: tn, agentName, text, summary } = req.body;
+    const team = tn ?? stateManager.getState().teamName;
+    if (!team || !agentName || !text) {
+      res.status(400).json({ error: 'teamName, agentName, and text are required' });
+      return;
+    }
+    try {
+      await inboxWriter.sendMessage(team, agentName, {
+        text,
+        summary: summary ?? text.slice(0, 50),
+      });
+      stateManager.addChatMessage({
+        timestamp: Date.now(),
+        agentName: 'You',
+        content: `[to ${agentName}] ${text}`,
+        type: 'user-sent',
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.post('/api/wake-agent', async (req, res) => {
+    const { teamName: tn, agentName } = req.body;
+    const team = tn ?? stateManager.getState().teamName;
+    if (!team || !agentName) {
+      res.status(400).json({ error: 'teamName and agentName are required' });
+      return;
+    }
+    try {
+      await inboxWriter.sendMessage(team, agentName, {
+        text: 'You have been nudged awake from the Virtual Office dashboard. Check your task list for pending work.',
+        summary: 'Wake up nudge from dashboard',
+      });
+      stateManager.addChatMessage({
+        timestamp: Date.now(),
+        agentName: 'You',
+        content: `Woke up ${agentName}`,
+        type: 'user-sent',
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
   });
 
   // Serve static files from dist/client/ (production build)

@@ -9,6 +9,7 @@ export interface SetupHooksOptions {
 
 // Hook event types that the virtual office needs to receive
 const HOOK_EVENTS = [
+  'SubagentStart',
   'SubagentStop',
   'PreToolUse',
   'PostToolUse',
