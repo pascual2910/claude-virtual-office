@@ -49,6 +49,38 @@ interface Particle {
   baseAlpha: number;
 }
 
+// Tool icon configs for visual indicators
+const TOOL_ICONS: Record<string, { symbol: string; color: number }> = {
+  Read:       { symbol: '📖', color: 0x06b6d4 },
+  Grep:       { symbol: '🔍', color: 0x06b6d4 },
+  Glob:       { symbol: '🔍', color: 0x06b6d4 },
+  Edit:       { symbol: '✏️', color: 0x8b5cf6 },
+  Write:      { symbol: '✏️', color: 0x8b5cf6 },
+  Bash:       { symbol: '⚡', color: 0xf59e0b },
+  WebSearch:  { symbol: '🌐', color: 0x10b981 },
+  WebFetch:   { symbol: '🌐', color: 0x10b981 },
+  SendMessage:{ symbol: '💬', color: 0xec4899 },
+  Agent:      { symbol: '✨', color: 0x6366f1 },
+};
+
+interface ToolOverlay {
+  container: Container;
+  life: number;
+  maxLife: number;
+}
+
+interface CelebrationParticle {
+  graphics: Graphics;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  gravity: number;
+  life: number;
+  maxLife: number;
+  color: number;
+}
+
 export class OfficeRenderer {
   private app: Application | null = null;
   private agentVisuals: Map<string, AgentVisual> = new Map();
@@ -60,6 +92,9 @@ export class OfficeRenderer {
   private containerEl: HTMLElement | null = null;
   private onAgentClick: ((id: string) => void) | null = null;
   private particles: Particle[] = [];
+  private effectsContainer: Container = new Container();
+  private toolOverlays: ToolOverlay[] = [];
+  private celebrationParticles: CelebrationParticle[] = [];
   private theme: ThemeConfig['office'] | null = null;
 
   async init(container: HTMLElement): Promise<void> {
@@ -82,6 +117,7 @@ export class OfficeRenderer {
     this.app.stage.addChild(this.decorationContainer);
     this.app.stage.addChild(this.particleContainer);
     this.app.stage.addChild(this.agentsContainer);
+    this.app.stage.addChild(this.effectsContainer);
 
     this.drawOfficeBackground();
 
@@ -631,6 +667,162 @@ export class OfficeRenderer {
 
       p.graphics.position.set(p.x, p.y);
     }
+
+    // Animate tool overlays (fade in, hold, fade out)
+    for (let i = this.toolOverlays.length - 1; i >= 0; i--) {
+      const overlay = this.toolOverlays[i];
+      overlay.life += deltaTime;
+
+      const progress = overlay.life / overlay.maxLife;
+      if (progress < 0.15) {
+        // Fade in + scale up
+        const t = progress / 0.15;
+        overlay.container.alpha = t;
+        overlay.container.scale.set(0.5 + t * 0.5);
+      } else if (progress < 0.7) {
+        // Hold visible, gentle float
+        overlay.container.alpha = 1;
+        overlay.container.scale.set(1);
+        overlay.container.y -= deltaTime * 0.1;
+      } else {
+        // Fade out
+        const t = (progress - 0.7) / 0.3;
+        overlay.container.alpha = 1 - t;
+        overlay.container.y -= deltaTime * 0.3;
+      }
+
+      if (progress >= 1) {
+        this.effectsContainer.removeChild(overlay.container);
+        overlay.container.destroy({ children: true });
+        this.toolOverlays.splice(i, 1);
+      }
+    }
+
+    // Animate celebration particles (confetti)
+    for (let i = this.celebrationParticles.length - 1; i >= 0; i--) {
+      const cp = this.celebrationParticles[i];
+      cp.life += deltaTime;
+
+      cp.vx *= 0.99; // Air resistance
+      cp.vy += cp.gravity * deltaTime;
+      cp.x += cp.vx * deltaTime;
+      cp.y += cp.vy * deltaTime;
+
+      const progress = cp.life / cp.maxLife;
+      cp.graphics.alpha = Math.max(0, 1 - progress);
+      cp.graphics.rotation += cp.vx * 0.05; // Spin
+      cp.graphics.position.set(cp.x, cp.y);
+
+      if (progress >= 1) {
+        this.effectsContainer.removeChild(cp.graphics);
+        cp.graphics.destroy();
+        this.celebrationParticles.splice(i, 1);
+      }
+    }
+  }
+
+  /** Show a tool icon animation at an agent's desk */
+  showToolUse(agentId: string, toolName: string): void {
+    const visual = this.agentVisuals.get(agentId);
+    if (!visual) return;
+
+    const iconConfig = TOOL_ICONS[toolName] ?? { symbol: '⚙️', color: 0x6b7280 };
+    const container = new Container();
+    const pos = visual.container.position;
+
+    // Background circle
+    const bg = new Graphics();
+    bg.circle(0, 0, 14);
+    bg.fill({ color: iconConfig.color, alpha: 0.2 });
+    bg.circle(0, 0, 14);
+    bg.stroke({ color: iconConfig.color, width: 1.5, alpha: 0.5 });
+    container.addChild(bg);
+
+    // Tool symbol text
+    const label = new Text({
+      text: iconConfig.symbol,
+      style: { fontSize: 14 },
+    });
+    label.anchor.set(0.5);
+    container.addChild(label);
+
+    container.position.set(pos.x + 45, pos.y - 30);
+    container.alpha = 0;
+    this.effectsContainer.addChild(container);
+
+    this.toolOverlays.push({
+      container,
+      life: 0,
+      maxLife: 90, // ~1.5 seconds at 60fps
+    });
+  }
+
+  /** Trigger a celebration effect at an agent's desk */
+  celebrate(agentId: string): void {
+    const visual = this.agentVisuals.get(agentId);
+    if (!visual) return;
+
+    const pos = visual.container.position;
+    const colors = [0xf59e0b, 0x10b981, 0x3b82f6, 0xef4444, 0x8b5cf6, 0xec4899, 0x06b6d4];
+
+    // Spawn confetti particles
+    for (let i = 0; i < 25; i++) {
+      const g = new Graphics();
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const size = 2 + Math.random() * 3;
+
+      // Mix of circles and rectangles
+      if (Math.random() > 0.5) {
+        g.circle(0, 0, size);
+      } else {
+        g.rect(-size, -size * 0.5, size * 2, size);
+      }
+      g.fill({ color });
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 3;
+
+      g.position.set(pos.x, pos.y - 40);
+      this.effectsContainer.addChild(g);
+
+      this.celebrationParticles.push({
+        graphics: g,
+        x: pos.x,
+        y: pos.y - 40,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2, // Bias upward
+        gravity: 0.06,
+        life: 0,
+        maxLife: 60 + Math.random() * 40,
+        color,
+      });
+    }
+
+    // Floating checkmark
+    const check = new Text({
+      text: '✓',
+      style: {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: 20,
+        fontWeight: 'bold',
+        fill: 0x10b981,
+      },
+    });
+    check.anchor.set(0.5);
+    check.position.set(pos.x, pos.y - 50);
+    this.effectsContainer.addChild(check);
+
+    const checkContainer = new Container();
+    checkContainer.addChild(check);
+    checkContainer.position.set(0, 0);
+    this.effectsContainer.addChild(checkContainer);
+
+    // Animate the check floating up
+    this.toolOverlays.push({
+      container: checkContainer,
+      life: 0,
+      maxLife: 80,
+    });
   }
 
   private truncateText(text: string, maxLen: number): string {
