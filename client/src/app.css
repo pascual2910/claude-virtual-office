@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --vo-primary: #3b82f6;
+  --vo-primary-hover: #2563eb;
+  --vo-secondary: #6366f1;
+  --vo-accent: #8b5cf6;
+  --vo-background: #0f172a;
+  --vo-surface: #1e293b;
+  --vo-surface-hover: #334155;
+  --vo-surface-elevated: #1e293b;
+  --vo-border: #334155;
+  --vo-text: #f1f5f9;
+  --vo-text-secondary: #94a3b8;
+  --vo-text-muted: #64748b;
+  --vo-success: #10b981;
+  --vo-warning: #f59e0b;
+  --vo-error: #ef4444;
+  --vo-idle: #6b7280;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--vo-background);
+  color: var(--vo-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vo-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vo-text-muted);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vo-border) transparent;
+}

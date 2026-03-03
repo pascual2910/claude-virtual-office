@@ -1,0 +1,14 @@
+{
+  "extends": "@sveltejs/vite-plugin-svelte/svelte-inspector.d.ts/../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["svelte"]
+  },
+  "include": ["client/src/**/*.ts", "client/src/**/*.svelte", "shared/**/*.ts"]
+}
