@@ -1,0 +1,48 @@
+{
+  "name": "claude-virtual-office",
+  "displayName": "Claude Virtual Office",
+  "description": "Visual dashboard for monitoring Claude Code agent teams",
+  "version": "1.0.0",
+  "publisher": "pascual",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claude-virtual-office.open",
+        "title": "Open Claude Virtual Office",
+        "category": "Claude"
+      },
+      {
+        "command": "claude-virtual-office.openExternal",
+        "title": "Open Claude Virtual Office in Browser",
+        "category": "Claude"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Virtual Office",
+      "properties": {
+        "claudeVirtualOffice.port": {
+          "type": "number",
+          "default": 3377,
+          "description": "Port the Virtual Office server is running on"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "watch": "tsc -watch -p tsconfig.json",
+    "package": "npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.9.3"
+  }
+}
