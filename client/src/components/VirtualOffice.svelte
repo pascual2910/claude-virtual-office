@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { OfficeRenderer } from '../canvas/office-renderer';
-  import { officeState, selectAgent } from '../state/store.svelte';
+  import { officeState, selectAgent, themeState } from '../state/store.svelte';
   import AgentDetailPanel from './AgentDetailPanel.svelte';
 
   let containerEl: HTMLDivElement;
@@ -13,6 +13,7 @@
       renderer!.setOnAgentClick((id) => {
         selectAgent(id);
       });
+      renderer!.setTheme(themeState.current);
     });
 
     return () => {
@@ -25,6 +26,13 @@
     const agents = officeState.agents;
     if (renderer && agents) {
       renderer.updateAgents(agents);
+    }
+  });
+
+  $effect(() => {
+    const theme = themeState.current;
+    if (renderer) {
+      renderer.setTheme(theme);
     }
   });
 </script>

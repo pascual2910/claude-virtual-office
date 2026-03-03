@@ -3,7 +3,8 @@
   import VirtualOffice from './components/VirtualOffice.svelte';
   import TaskBoard from './components/TaskBoard.svelte';
   import ChatPanel from './components/ChatPanel.svelte';
-  import { officeState } from './state/store.svelte';
+  import ThemeSwitcher from './components/ThemeSwitcher.svelte';
+  import { officeState, themeState, applyThemeCssVars } from './state/store.svelte';
   import { connectWebSocket } from './state/websocket-client';
 
   let sessionStartTime = $state(Date.now());
@@ -31,6 +32,7 @@
   });
 
   onMount(() => {
+    applyThemeCssVars(themeState.current);
     cleanupWs = connectWebSocket();
 
     const timer = setInterval(() => {
@@ -58,6 +60,7 @@
       {/if}
     </div>
     <div class="flex items-center gap-4">
+      <ThemeSwitcher />
       <div class="flex items-center gap-2">
         <span
           class="w-2.5 h-2.5 rounded-full {officeState.connected

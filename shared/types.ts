@@ -94,11 +94,32 @@ export interface HookEvent {
   [key: string]: any;
 }
 
-// Theme definition
+// Decoration to draw in the office scene
+export interface SceneDecoration {
+  type: 'bookshelf' | 'plant' | 'window' | 'lamp' | 'coffee-cup' | 'monitor-rack' | 'viewport' | 'partition';
+  position: Position;
+  width: number;
+  height: number;
+  color: number;
+  accentColor?: number;
+}
+
+// Ambient particle configuration
+export interface ParticleConfig {
+  type: 'dust' | 'stars' | 'steam' | 'none';
+  count: number;
+  color: number;
+  speed: number;
+  size: number;
+  alpha: number;
+}
+
+// Theme definition — each theme is a distinct visual environment
 export interface ThemeConfig {
   id: string;
   name: string;
   description: string;
+  emoji: string;
   palette: {
     primary: string;
     secondary: string;
@@ -113,9 +134,18 @@ export interface ThemeConfig {
     idle: string;
   };
   office: {
-    backgroundColor: number; // PixiJS hex color
+    backgroundColor: number;
     deskColor: number;
+    deskAccent: number;
     floorColor: number;
     wallColor: number;
+    wallAccent: number;
+    gridColor: number;
+    gridAlpha: number;
+    agentGlow: boolean;
+    monitorColor: number;
+    monitorGlow: number;
+    decorations: SceneDecoration[];
+    particles: ParticleConfig;
   };
 }

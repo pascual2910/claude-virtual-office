@@ -3,7 +3,8 @@ import type { ThemeConfig } from '../../../shared/types';
 export const modernOfficeTheme: ThemeConfig = {
   id: 'modern-office',
   name: 'Modern Office',
-  description: 'Professional dark theme with blue accents',
+  description: 'Sleek dark office with glass partitions and blue accents',
+  emoji: '🏢',
   palette: {
     primary: '#3b82f6',
     secondary: '#6366f1',
@@ -20,7 +21,20 @@ export const modernOfficeTheme: ThemeConfig = {
   office: {
     backgroundColor: 0x0f172a,
     deskColor: 0x334155,
+    deskAccent: 0x475569,
     floorColor: 0x1a1a2e,
     wallColor: 0x1e293b,
+    wallAccent: 0x334155,
+    gridColor: 0x1f2937,
+    gridAlpha: 0.3,
+    agentGlow: false,
+    monitorColor: 0x1e293b,
+    monitorGlow: 0x3b82f6,
+    decorations: [
+      { type: 'partition', position: { x: 350, y: 60 }, width: 2, height: 300, color: 0x334155 },
+      { type: 'plant', position: { x: 50, y: 80 }, width: 20, height: 30, color: 0x10b981 },
+      { type: 'plant', position: { x: 650, y: 80 }, width: 20, height: 30, color: 0x10b981 },
+    ],
+    particles: { type: 'none', count: 0, color: 0, speed: 0, size: 0, alpha: 0 },
   },
 };
