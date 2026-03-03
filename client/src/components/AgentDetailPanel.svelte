@@ -69,6 +69,8 @@
 </script>
 
 {#if selectedAgent}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="agent-detail-overlay" onclick={(e) => { if (e.target === e.currentTarget) selectAgent(null); }}>
     <div class="agent-detail-card">
       <!-- Header -->
@@ -85,7 +87,7 @@
             <span class="text-[10px] text-gray-500 uppercase tracking-wider">{selectedAgent.agentType}</span>
           </div>
         </div>
-        <button class="close-btn" onclick={() => selectAgent(null)}>
+        <button class="close-btn" onclick={() => selectAgent(null)} aria-label="Close">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>

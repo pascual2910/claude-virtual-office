@@ -157,8 +157,8 @@
   {#if officeState.agents.length > 0}
     <div class="chat-input-area">
       <div class="flex items-center gap-2 mb-1.5">
-        <label class="text-[10px] text-gray-500 uppercase tracking-wider">To:</label>
-        <select bind:value={targetAgent} class="agent-select">
+        <label class="text-[10px] text-gray-500 uppercase tracking-wider" for="agent-select">To:</label>
+        <select id="agent-select" bind:value={targetAgent} class="agent-select">
           {#each officeState.agents as agent}
             <option value={agent.name}>{agent.name}</option>
           {/each}
