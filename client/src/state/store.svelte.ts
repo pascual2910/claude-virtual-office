@@ -1,6 +1,7 @@
 import type {
   VirtualOfficeState,
   AgentState,
+  AgentStatus,
   TaskState,
   ChatMessage,
   ThemeConfig,
@@ -94,4 +95,57 @@ export function applyThemeCssVars(theme: ThemeConfig): void {
   root.style.setProperty('--vo-warning', theme.palette.warning);
   root.style.setProperty('--vo-error', theme.palette.error);
   root.style.setProperty('--vo-idle', theme.palette.idle);
+  // Derived vars for UI components
+  root.style.setProperty('--vo-surface-hover', lightenHex(theme.palette.surface, 20));
+  root.style.setProperty('--vo-border', lightenHex(theme.palette.surface, 30));
+  root.style.setProperty('--vo-text-muted', theme.palette.idle);
+}
+
+/** Lighten a hex color by a percentage (0-100). */
+function lightenHex(hex: string, percent: number): string {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, ((num >> 16) & 0xff) + Math.round(255 * percent / 100));
+  const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * percent / 100));
+  const b = Math.min(255, (num & 0xff) + Math.round(255 * percent / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+// --- Status history for sparklines ---
+
+export interface StatusHistoryEntry {
+  status: AgentStatus;
+  timestamp: number;
+}
+
+const MAX_HISTORY = 30;
+
+export const statusHistory: Map<string, StatusHistoryEntry[]> = $state(new Map());
+
+export function recordStatusChange(agentId: string, status: AgentStatus): void {
+  if (!statusHistory.has(agentId)) {
+    statusHistory.set(agentId, []);
+  }
+  const history = statusHistory.get(agentId)!;
+  // Only record if status actually changed
+  if (history.length > 0 && history[history.length - 1].status === status) return;
+
+  history.push({ status, timestamp: Date.now() });
+  if (history.length > MAX_HISTORY) {
+    history.splice(0, history.length - MAX_HISTORY);
+  }
+}
+
+// --- Sound state ---
+
+const savedMuted = typeof localStorage !== 'undefined'
+  ? localStorage.getItem('vo-muted') === 'true'
+  : false;
+
+export const soundState: { muted: boolean } = $state({ muted: savedMuted });
+
+export function toggleMute(): void {
+  soundState.muted = !soundState.muted;
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('vo-muted', String(soundState.muted));
+  }
 }

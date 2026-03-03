@@ -1,12 +1,17 @@
 <script lang="ts">
-  import { officeState, selection, selectAgent } from '../state/store.svelte';
+  import { officeState, selection, selectAgent, statusHistory } from '../state/store.svelte';
   import { sendMessageToAgent, wakeAgent } from '../state/api-client';
   import type { AgentState } from '../../../shared/types';
+  import Sparkline from './Sparkline.svelte';
 
   let selectedAgent: AgentState | null = $derived(
     selection.agentId
       ? officeState.agents.find(a => a.id === selection.agentId) ?? null
       : null
+  );
+
+  let agentHistory = $derived(
+    selectedAgent ? (statusHistory.get(selectedAgent.id) ?? []) : []
   );
 
   let quickMessage = $state('');
@@ -42,6 +47,11 @@
     if (minutes < 60) return `${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
     return `${hours}h ${minutes % 60}m ago`;
+  }
+
+  function basename(filePath: string): string {
+    const parts = filePath.split('/');
+    return parts[parts.length - 1] ?? filePath;
   }
 
   async function handleSendQuick() {
@@ -83,8 +93,8 @@
             {selectedAgent.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3 class="text-sm font-bold text-gray-100">{selectedAgent.name}</h3>
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider">{selectedAgent.agentType}</span>
+            <h3 class="text-sm font-bold" style="color: var(--vo-text)">{selectedAgent.name}</h3>
+            <span class="text-[10px] uppercase tracking-wider" style="color: var(--vo-text-muted)">{selectedAgent.agentType}</span>
           </div>
         </div>
         <button class="close-btn" onclick={() => selectAgent(null)} aria-label="Close">
@@ -105,19 +115,46 @@
           <span class="text-xs font-medium" style="color: {statusColors[selectedAgent.status] ?? '#6b7280'}">
             {statusLabels[selectedAgent.status] ?? selectedAgent.status}
           </span>
-          <span class="text-[10px] text-gray-600 ml-auto">
+          <span class="text-[10px] ml-auto" style="color: var(--vo-text-muted)">
             {timeSince(selectedAgent.lastActivityTime)}
           </span>
         </div>
         {#if selectedAgent.currentAction}
-          <p class="text-xs text-gray-400 mt-1.5 pl-4">{selectedAgent.currentAction}</p>
+          <p class="text-xs mt-1.5 pl-4" style="color: var(--vo-text-secondary)">{selectedAgent.currentAction}</p>
         {/if}
         {#if selectedAgent.currentTool}
-          <p class="text-[10px] text-gray-500 mt-1 pl-4 font-mono">
+          <p class="text-[10px] mt-1 pl-4 font-mono" style="color: var(--vo-text-muted)">
             Tool: {selectedAgent.currentTool}
           </p>
         {/if}
       </div>
+
+      <!-- Activity Sparkline -->
+      {#if agentHistory.length > 1}
+        <div class="card-section">
+          <h4 class="section-label">Activity</h4>
+          <Sparkline history={agentHistory} />
+        </div>
+      {/if}
+
+      <!-- File Activity -->
+      {#if selectedAgent.recentFiles?.length}
+        <div class="card-section">
+          <h4 class="section-label">Recent Files</h4>
+          <div class="file-list">
+            {#each selectedAgent.recentFiles.slice(0, 8) as file}
+              <div class="file-entry">
+                <span class="file-tool-icon">
+                  {file.tool === 'Read' ? '\u{1F4D6}' : file.tool === 'Edit' ? '\u{270F}\u{FE0F}' : '\u{1F4DD}'}
+                </span>
+                <span class="file-name" title={file.filePath}>
+                  {basename(file.filePath)}
+                </span>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <!-- Wake button for idle agents -->
       {#if selectedAgent.status === 'idle'}
@@ -163,8 +200,8 @@
   }
 
   .agent-detail-card {
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid rgba(51, 65, 85, 0.6);
+    background: color-mix(in srgb, var(--vo-background) 95%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-border) 60%, transparent);
     border-radius: 0.75rem;
     width: 280px;
     backdrop-filter: blur(16px);
@@ -177,7 +214,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+    border-bottom: 1px solid color-mix(in srgb, var(--vo-border) 40%, transparent);
   }
 
   .agent-avatar {
@@ -193,7 +230,7 @@
   }
 
   .close-btn {
-    color: #64748b;
+    color: var(--vo-text-muted);
     background: none;
     border: none;
     cursor: pointer;
@@ -206,16 +243,24 @@
   }
 
   .close-btn:hover {
-    color: #e2e8f0;
+    color: var(--vo-text);
   }
 
   .card-section {
     padding: 0.625rem 0.75rem;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+    border-bottom: 1px solid color-mix(in srgb, var(--vo-border) 30%, transparent);
   }
 
   .card-section:last-child {
     border-bottom: none;
+  }
+
+  .section-label {
+    font-size: 0.625rem;
+    color: var(--vo-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.375rem;
   }
 
   .status-dot {
@@ -232,35 +277,61 @@
     border-radius: 0.375rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--vo-warning);
+    background: color-mix(in srgb, var(--vo-warning) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-warning) 30%, transparent);
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .wake-btn:hover {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.5);
+    background: color-mix(in srgb, var(--vo-warning) 20%, transparent);
+    border-color: color-mix(in srgb, var(--vo-warning) 50%, transparent);
+  }
+
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .file-entry {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.6875rem;
+  }
+
+  .file-tool-icon {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .file-name {
+    color: var(--vo-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ui-monospace, monospace;
   }
 
   .quick-input {
     flex: 1;
-    background: rgba(30, 41, 59, 0.7);
-    border: 1px solid rgba(51, 65, 85, 0.5);
+    background: color-mix(in srgb, var(--vo-surface) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-border) 50%, transparent);
     border-radius: 0.375rem;
     padding: 0.375rem 0.5rem;
     font-size: 0.75rem;
-    color: #e2e8f0;
+    color: var(--vo-text);
     outline: none;
   }
 
   .quick-input:focus {
-    border-color: #3b82f6;
+    border-color: var(--vo-primary);
   }
 
   .quick-input::placeholder {
-    color: #64748b;
+    color: var(--vo-text-muted);
   }
 
   .quick-send {
@@ -269,14 +340,14 @@
     font-size: 0.6875rem;
     font-weight: 600;
     color: #ffffff;
-    background: #3b82f6;
+    background: var(--vo-primary);
     border: none;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .quick-send:hover:not(:disabled) {
-    background: #2563eb;
+    background: var(--vo-primary-hover);
   }
 
   .quick-send:disabled {

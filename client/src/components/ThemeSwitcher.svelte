@@ -53,16 +53,16 @@
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
     font-size: 0.75rem;
-    color: #94a3b8;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(51, 65, 85, 0.4);
+    color: var(--vo-text-secondary);
+    background: color-mix(in srgb, var(--vo-surface) 50%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-border) 40%, transparent);
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .theme-trigger:hover {
-    color: #e2e8f0;
-    border-color: rgba(51, 65, 85, 0.7);
+    color: var(--vo-text);
+    border-color: color-mix(in srgb, var(--vo-border) 70%, transparent);
   }
 
   .theme-emoji {
@@ -80,7 +80,7 @@
   }
 
   .chevron {
-    color: #64748b;
+    color: var(--vo-text-muted);
     transition: transform 0.2s ease;
   }
 
@@ -100,8 +100,8 @@
     right: 0;
     margin-top: 0.375rem;
     width: 280px;
-    background: rgba(15, 23, 42, 0.97);
-    border: 1px solid rgba(51, 65, 85, 0.6);
+    background: color-mix(in srgb, var(--vo-background) 97%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-border) 60%, transparent);
     border-radius: 0.625rem;
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -118,19 +118,19 @@
     border-radius: 0.5rem;
     border: none;
     background: transparent;
-    color: #e2e8f0;
+    color: var(--vo-text);
     cursor: pointer;
     transition: background 0.15s ease;
     text-align: left;
   }
 
   .theme-option:hover {
-    background: rgba(30, 41, 59, 0.7);
+    background: color-mix(in srgb, var(--vo-surface) 70%, transparent);
   }
 
   .theme-option.active {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: color-mix(in srgb, var(--vo-primary) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-primary) 30%, transparent);
   }
 
   .option-emoji {
@@ -147,13 +147,13 @@
     display: block;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--vo-text);
   }
 
   .option-desc {
     display: block;
     font-size: 0.6875rem;
-    color: #64748b;
+    color: var(--vo-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

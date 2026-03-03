@@ -119,6 +119,15 @@ export function createHooksRouter(state: StateManager): Router {
         const status = toolToStatus(toolName);
         const action = describeToolAction(toolName, event.tool_input);
         state.updateAgentStatus(id, status, toolName, action);
+
+        // Track file activity for Read/Edit/Write tools
+        if (
+          (toolName === 'Read' || toolName === 'Edit' || toolName === 'Write') &&
+          event.tool_input?.file_path
+        ) {
+          state.addFileActivity(id, event.tool_input.file_path, toolName);
+        }
+
         state.addChatMessage({
           timestamp: Date.now(),
           agentName: id,

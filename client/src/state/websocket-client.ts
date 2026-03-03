@@ -6,7 +6,10 @@ import {
   addChatMessage,
   updateTeam,
   setConnected,
+  recordStatusChange,
+  soundState,
 } from './store.svelte';
+import { playSound, setMuted } from './sounds';
 
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,18 +60,30 @@ export function connectWebSocket(): () => void {
 }
 
 function handleMessage(msg: WsMessage): void {
+  // Sync mute state from reactive store to sounds module
+  setMuted(soundState.muted);
+
   switch (msg.type) {
     case 'full-state':
       updateFullState(msg.state);
       break;
     case 'agent-updated':
       updateAgent(msg.agent);
+      recordStatusChange(msg.agent.id, msg.agent.status);
       break;
     case 'tasks-updated':
       updateTasks(msg.tasks);
       break;
     case 'chat-message':
       addChatMessage(msg.message);
+      // Sound triggers
+      if (msg.message.type === 'system' && msg.message.content.includes('went idle')) {
+        playSound('agent-idle');
+      } else if (msg.message.type === 'system' && msg.message.content.startsWith('Completed:')) {
+        playSound('task-completed');
+      } else if (msg.message.type === 'agent-message') {
+        playSound('message-received');
+      }
       break;
     case 'team-changed':
       updateTeam(msg.teamName, msg.agents);

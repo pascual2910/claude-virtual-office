@@ -3,13 +3,16 @@ import type {
   AgentState,
   AgentStatus,
   ChatMessage,
+  FileActivity,
   Position,
   TaskState,
   ToolName,
   VirtualOfficeState,
 } from '../shared/types.js';
+import { friendlyName } from './friendly-names.js';
 
 const MAX_CHAT_LOG = 500;
+const MAX_RECENT_FILES = 20;
 
 // Grid layout constants
 const GRID_START_X = 150;
@@ -62,6 +65,7 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
       seatPosition: seatPosition(i),
       taskId: null,
       lastActivityTime: Date.now(),
+      recentFiles: [],
     }));
 
     this.emit('team-changed', this.state.teamName, this.state.agents);
@@ -85,7 +89,7 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
       // Auto-create agent from hook event
       agent = {
         id: nameOrId,
-        name: nameOrId,
+        name: friendlyName(nameOrId),
         agentType: 'agent',
         status,
         currentTool: currentTool ?? null,
@@ -94,9 +98,10 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
         seatPosition: seatPosition(this.state.agents.length),
         taskId: null,
         lastActivityTime: Date.now(),
+        recentFiles: [],
       };
       this.state.agents.push(agent);
-      console.log(`  [State] New agent discovered: ${nameOrId}`);
+      console.log(`  [State] New agent discovered: ${agent.name} (${nameOrId})`);
       this.emit('team-changed', this.state.teamName, this.state.agents);
       this.emit('state-changed');
       return;
@@ -109,6 +114,30 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
 
     this.emit('agent-updated', agent);
     this.emit('state-changed');
+  }
+
+  /**
+   * Track a file read/edit/write for an agent.
+   */
+  addFileActivity(
+    nameOrId: string,
+    filePath: string,
+    tool: FileActivity['tool']
+  ): void {
+    const agent = this.getAgent(nameOrId);
+    if (!agent) return;
+
+    // Deduplicate: remove existing entry for same file+tool
+    agent.recentFiles = agent.recentFiles.filter(
+      (f) => !(f.filePath === filePath && f.tool === tool)
+    );
+
+    agent.recentFiles.unshift({ filePath, tool, timestamp: Date.now() });
+    if (agent.recentFiles.length > MAX_RECENT_FILES) {
+      agent.recentFiles = agent.recentFiles.slice(0, MAX_RECENT_FILES);
+    }
+
+    this.emit('agent-updated', agent);
   }
 
   /**

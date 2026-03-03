@@ -96,7 +96,7 @@
 
 <div class="flex flex-col h-full">
   <!-- Filter tabs -->
-  <div class="flex gap-1 mb-3 p-0.5 bg-slate-800/50 rounded-lg">
+  <div class="flex gap-1 mb-3 p-0.5 rounded-lg" style="background: color-mix(in srgb, var(--vo-surface) 50%, transparent)">
     {#each filters as filter}
       <button
         class="filter-tab"
@@ -112,7 +112,7 @@
   <div class="flex-1 overflow-y-auto space-y-1" bind:this={scrollContainer}>
     {#each filteredMessages as msg, i (i)}
       <div class="chat-message {msg.type}">
-        <span class="text-[10px] text-gray-600 shrink-0 font-mono">
+        <span class="text-[10px] shrink-0 font-mono" style="color: var(--vo-text-muted)">
           {formatTime(msg.timestamp)}
         </span>
 
@@ -124,17 +124,17 @@
             >
               {msg.agentName}
             </span>
-            <p class="text-sm text-gray-300 break-words">{msg.content}</p>
+            <p class="text-sm break-words" style="color: var(--vo-text)">{msg.content}</p>
           </div>
         {:else if msg.type === 'tool-use'}
-          <p class="flex-1 text-xs text-gray-500 italic">
-            <span class="text-gray-400">{msg.agentName}</span> is using
-            <span class="text-gray-400 font-mono">{msg.content}</span>
+          <p class="flex-1 text-xs italic" style="color: var(--vo-text-muted)">
+            <span style="color: var(--vo-text-secondary)">{msg.agentName}</span> is using
+            <span class="font-mono" style="color: var(--vo-text-secondary)">{msg.content}</span>
           </p>
         {:else if msg.type === 'system'}
           {@const idleAgent = extractIdleAgent(msg.content)}
           <div class="flex-1 flex items-center justify-center gap-2">
-            <p class="text-xs text-gray-600">{msg.content}</p>
+            <p class="text-xs" style="color: var(--vo-text-muted)">{msg.content}</p>
             {#if idleAgent}
               <button
                 class="wake-button"
@@ -148,7 +148,7 @@
       </div>
     {:else}
       <div class="flex items-center justify-center h-full">
-        <p class="text-sm text-gray-600 italic">Waiting for activity...</p>
+        <p class="text-sm italic" style="color: var(--vo-text-muted)">Waiting for activity...</p>
       </div>
     {/each}
   </div>
@@ -157,7 +157,7 @@
   {#if officeState.agents.length > 0}
     <div class="chat-input-area">
       <div class="flex items-center gap-2 mb-1.5">
-        <label class="text-[10px] text-gray-500 uppercase tracking-wider" for="agent-select">To:</label>
+        <label class="text-[10px] uppercase tracking-wider" style="color: var(--vo-text-muted)" for="agent-select">To:</label>
         <select id="agent-select" bind:value={targetAgent} class="agent-select">
           {#each officeState.agents as agent}
             <option value={agent.name}>{agent.name}</option>
@@ -190,7 +190,7 @@
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--vo-text-secondary);
     background: transparent;
     border: none;
     cursor: pointer;
@@ -198,13 +198,13 @@
   }
 
   .filter-tab:hover {
-    color: #e2e8f0;
-    background: rgba(51, 65, 85, 0.4);
+    color: var(--vo-text);
+    background: color-mix(in srgb, var(--vo-border) 40%, transparent);
   }
 
   .filter-tab.active {
-    color: #f1f5f9;
-    background: rgba(51, 65, 85, 0.7);
+    color: var(--vo-text);
+    background: color-mix(in srgb, var(--vo-border) 70%, transparent);
   }
 
   .chat-message {
@@ -216,7 +216,7 @@
   }
 
   .chat-message:hover {
-    background: rgba(30, 41, 59, 0.5);
+    background: color-mix(in srgb, var(--vo-surface) 50%, transparent);
   }
 
   .chat-message.system {
@@ -229,57 +229,57 @@
     border-radius: 0.25rem;
     font-size: 0.65rem;
     font-weight: 600;
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--vo-warning);
+    background: color-mix(in srgb, var(--vo-warning) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-warning) 30%, transparent);
     cursor: pointer;
     transition: all 0.15s ease;
     white-space: nowrap;
   }
 
   .wake-button:hover {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.5);
+    background: color-mix(in srgb, var(--vo-warning) 20%, transparent);
+    border-color: color-mix(in srgb, var(--vo-warning) 50%, transparent);
   }
 
   .chat-input-area {
     margin-top: 0.5rem;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(51, 65, 85, 0.4);
+    border-top: 1px solid color-mix(in srgb, var(--vo-border) 40%, transparent);
   }
 
   .agent-select {
     flex: 1;
-    background: rgba(30, 41, 59, 0.7);
-    border: 1px solid rgba(51, 65, 85, 0.5);
+    background: color-mix(in srgb, var(--vo-surface) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-border) 50%, transparent);
     border-radius: 0.375rem;
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
-    color: #e2e8f0;
+    color: var(--vo-text);
     outline: none;
   }
 
   .agent-select:focus {
-    border-color: #3b82f6;
+    border-color: var(--vo-primary);
   }
 
   .chat-input {
     flex: 1;
-    background: rgba(30, 41, 59, 0.7);
-    border: 1px solid rgba(51, 65, 85, 0.5);
+    background: color-mix(in srgb, var(--vo-surface) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vo-border) 50%, transparent);
     border-radius: 0.375rem;
     padding: 0.375rem 0.625rem;
     font-size: 0.8125rem;
-    color: #e2e8f0;
+    color: var(--vo-text);
     outline: none;
   }
 
   .chat-input:focus {
-    border-color: #3b82f6;
+    border-color: var(--vo-primary);
   }
 
   .chat-input::placeholder {
-    color: #64748b;
+    color: var(--vo-text-muted);
   }
 
   .send-button {
@@ -288,14 +288,14 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: #ffffff;
-    background: #3b82f6;
+    background: var(--vo-primary);
     border: none;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .send-button:hover:not(:disabled) {
-    background: #2563eb;
+    background: var(--vo-primary-hover);
   }
 
   .send-button:disabled {

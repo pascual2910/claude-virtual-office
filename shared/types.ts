@@ -31,6 +31,12 @@ export interface Position {
   y: number;
 }
 
+export interface FileActivity {
+  filePath: string;
+  tool: 'Read' | 'Edit' | 'Write';
+  timestamp: number;
+}
+
 export interface AgentState {
   id: string;
   name: string;
@@ -42,6 +48,7 @@ export interface AgentState {
   seatPosition: Position;
   taskId: string | null;
   lastActivityTime: number;
+  recentFiles: FileActivity[];
 }
 
 export interface TaskState {
