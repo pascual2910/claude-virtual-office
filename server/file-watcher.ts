@@ -7,7 +7,7 @@ import { JsonlTailReader } from './jsonl-parser.js';
 
 export interface FileWatcherEvents {
   'team-config-changed': [config: any];
-  'tasks-changed': [tasks: any[]];
+  'tasks-changed': [filePath: string, tasks: any[]];
   'jsonl-entry': [entry: any];
   error: [err: Error];
 }
@@ -138,7 +138,7 @@ export class FileWatcher extends EventEmitter<FileWatcherEvents> {
         return;
       }
 
-      this.emit('tasks-changed', tasks);
+      this.emit('tasks-changed', filePath, tasks);
     } catch {
       // File might be partially written or invalid JSON
     }

@@ -46,6 +46,10 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
     connected: true,
   };
 
+  // Two task sources — merged on every update
+  private _fileTasks: Map<string, TaskState[]> = new Map();
+  private _todoTasks: Map<string, TaskState[]> = new Map();
+
   /**
    * Set (or replace) the active team and create AgentState entries for each member.
    */
@@ -141,10 +145,30 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
   }
 
   /**
-   * Replace the full task list.
+   * Replace tasks from a specific file source (from FileWatcher).
    */
-  updateTasks(tasks: TaskState[]): void {
-    this.state.tasks = tasks;
+  updateFileTasks(filePath: string, tasks: TaskState[]): void {
+    this._fileTasks.set(filePath, tasks);
+    this._mergeAndEmitTasks();
+  }
+
+  /**
+   * Replace all TodoWrite todos for a specific agent.
+   */
+  updateTodoTasks(agentIdentifier: string, todos: TaskState[]): void {
+    this._todoTasks.set(agentIdentifier, todos);
+    this._mergeAndEmitTasks();
+  }
+
+  private _mergeAndEmitTasks(): void {
+    const merged: TaskState[] = [];
+    for (const tasks of this._fileTasks.values()) {
+      merged.push(...tasks);
+    }
+    for (const tasks of this._todoTasks.values()) {
+      merged.push(...tasks);
+    }
+    this.state.tasks = merged;
     this.emit('tasks-updated', this.state.tasks);
     this.emit('state-changed');
   }

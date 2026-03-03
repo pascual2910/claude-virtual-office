@@ -180,7 +180,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
     }
   });
 
-  fileWatcher.on('tasks-changed', (tasks) => {
+  fileWatcher.on('tasks-changed', (filePath, tasks) => {
     const normalized: TaskState[] = tasks.map((t: any) => ({
       id: t.id ?? String(Math.random()),
       content: t.content ?? t.title ?? '',
@@ -188,7 +188,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
       owner: t.owner ?? null,
       activeForm: t.activeForm ?? undefined,
     }));
-    stateManager.updateTasks(normalized);
+    stateManager.updateFileTasks(filePath, normalized);
   });
 
   fileWatcher.on('jsonl-entry', (entry) => {

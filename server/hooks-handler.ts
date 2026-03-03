@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import type { AgentStatus, ChatMessage, HookEvent, ToolName } from '../shared/types.js';
+import type { AgentStatus, ChatMessage, HookEvent, TaskState, ToolName } from '../shared/types.js';
 import type { StateManager } from './state-manager.js';
 
 /**
@@ -128,6 +128,21 @@ export function createHooksRouter(state: StateManager): Router {
           state.addFileActivity(id, event.tool_input.file_path, toolName);
         }
 
+        // Intercept TodoWrite to update task board
+        if (toolName === 'TodoWrite' && event.tool_input?.todos) {
+          const agentName = state.getAgent(id)?.name ?? id;
+          const todos: TaskState[] = event.tool_input.todos.map(
+            (todo: any, index: number) => ({
+              id: `todo-${id}-${index}`,
+              content: todo.content ?? '',
+              status: todo.status ?? 'pending',
+              owner: agentName,
+              activeForm: todo.activeForm ?? undefined,
+            })
+          );
+          state.updateTodoTasks(id, todos);
+        }
+
         state.addChatMessage({
           timestamp: Date.now(),
           agentName: id,
@@ -217,6 +232,10 @@ function describeToolAction(toolName: string, toolInput: any): string {
       return toolInput.recipient
         ? `Messaging ${toolInput.recipient}`
         : 'Sending message';
+    case 'TodoWrite': {
+      const count = toolInput.todos?.length ?? 0;
+      return `Updating ${count} todo${count !== 1 ? 's' : ''}`;
+    }
     case 'TaskUpdate':
       return 'Updating task';
     case 'TaskCreate':
