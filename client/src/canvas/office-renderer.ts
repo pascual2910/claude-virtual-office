@@ -96,6 +96,7 @@ export class OfficeRenderer {
   private toolOverlays: ToolOverlay[] = [];
   private celebrationParticles: CelebrationParticle[] = [];
   private theme: ThemeConfig['office'] | null = null;
+  private initialized = false;
 
   async init(container: HTMLElement): Promise<void> {
     this.containerEl = container;
@@ -132,6 +133,7 @@ export class OfficeRenderer {
       }
     });
     this.resizeObserver.observe(container);
+    this.initialized = true;
   }
 
   setOnAgentClick(handler: (id: string) => void): void {
@@ -141,9 +143,8 @@ export class OfficeRenderer {
   /** Apply a new theme — redraws everything */
   setTheme(themeConfig: ThemeConfig): void {
     this.theme = themeConfig.office;
-    if (this.app) {
-      this.app.renderer.background.color = themeConfig.office.backgroundColor;
-    }
+    if (!this.initialized || !this.app) return;
+    this.app.renderer.background.color = themeConfig.office.backgroundColor;
     this.drawOfficeBackground();
     // Rebuild all agent visuals with new theme colors
     const agents: AgentState[] = [];

@@ -47,7 +47,7 @@ export function createHooksRouter(state: StateManager): Router {
   const router = Router();
 
   // Handle both /hooks/:eventName and /hooks?event=EventName
-  router.post('/hooks/:eventName?', (req: Request, res: Response) => {
+  router.post('/hooks/{:eventName}', (req: Request, res: Response) => {
     // Always respond immediately
     res.status(200).json({});
 

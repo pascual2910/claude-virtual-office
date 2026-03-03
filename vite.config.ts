@@ -25,7 +25,7 @@ export default defineConfig({
       '/hooks': 'http://localhost:3377',
       '/api': 'http://localhost:3377',
       '/ws': {
-        target: 'ws://localhost:3377',
+        target: 'http://localhost:3377',
         ws: true,
       },
     },
