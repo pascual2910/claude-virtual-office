@@ -12,6 +12,16 @@
   let cleanupWs: (() => void) | null = null;
 
   let agentCount = $derived(officeState.agents.length);
+
+  // Derive a display-friendly project name from the path
+  let projectName = $derived(() => {
+    if (!officeState.projectPath) return null;
+    const basename = officeState.projectPath.split('/').filter(Boolean).pop() ?? '';
+    // Replace hyphens with spaces and title-case
+    return basename
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  });
   let totalTasks = $derived(officeState.tasks.length);
   let completedTasks = $derived(
     officeState.tasks.filter((t) => t.status === 'completed').length
@@ -56,6 +66,15 @@
       {#if officeState.teamName}
         <span class="text-sm border-l pl-3" style="color: var(--vo-text-secondary); border-color: var(--vo-border)">
           {officeState.teamName}
+        </span>
+      {/if}
+      {#if projectName()}
+        <span
+          class="text-sm border-l pl-3"
+          style="color: var(--vo-text-muted); border-color: var(--vo-border)"
+          title={officeState.projectPath}
+        >
+          {projectName()}
         </span>
       {/if}
     </div>

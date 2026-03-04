@@ -72,9 +72,10 @@ export function createHooksRouter(state: StateManager): Router {
     switch (eventName) {
       case 'SubagentStart': {
         state.updateAgentStatus(id, 'working');
+        const name = state.getAgent(id)?.name ?? id;
         state.addChatMessage({
           timestamp: Date.now(),
-          agentName: id,
+          agentName: name,
           content: `Agent started`,
           type: 'system',
         });
@@ -83,9 +84,10 @@ export function createHooksRouter(state: StateManager): Router {
 
       case 'SubagentStop': {
         state.updateAgentStatus(id, 'stopped', null, null);
+        const name = state.getAgent(id)?.name ?? id;
         state.addChatMessage({
           timestamp: Date.now(),
-          agentName: id,
+          agentName: name,
           content: `Agent stopped`,
           type: 'system',
         });
@@ -94,10 +96,11 @@ export function createHooksRouter(state: StateManager): Router {
 
       case 'TeammateIdle': {
         state.updateAgentStatus(id, 'idle', null, null);
+        const name = state.getAgent(id)?.name ?? id;
         state.addChatMessage({
           timestamp: Date.now(),
-          agentName: id,
-          content: `${id} went idle`,
+          agentName: name,
+          content: `${name} went idle`,
           type: 'system',
         });
         break;
@@ -105,9 +108,10 @@ export function createHooksRouter(state: StateManager): Router {
 
       case 'TaskCompleted': {
         const taskSubject = event.task_subject ?? event.task_id ?? 'a task';
+        const name = state.getAgent(id)?.name ?? id;
         state.addChatMessage({
           timestamp: Date.now(),
-          agentName: id,
+          agentName: name,
           content: `Completed: ${taskSubject}`,
           type: 'system',
         });
@@ -119,6 +123,7 @@ export function createHooksRouter(state: StateManager): Router {
         const status = toolToStatus(toolName);
         const action = describeToolAction(toolName, event.tool_input);
         state.updateAgentStatus(id, status, toolName, action);
+        const name = state.getAgent(id)?.name ?? id;
 
         // Track file activity for Read/Edit/Write tools
         if (
@@ -130,22 +135,32 @@ export function createHooksRouter(state: StateManager): Router {
 
         // Intercept TodoWrite to update task board
         if (toolName === 'TodoWrite' && event.tool_input?.todos) {
-          const agentName = state.getAgent(id)?.name ?? id;
           const todos: TaskState[] = event.tool_input.todos.map(
             (todo: any, index: number) => ({
               id: `todo-${id}-${index}`,
               content: todo.content ?? '',
               status: todo.status ?? 'pending',
-              owner: agentName,
+              owner: name,
               activeForm: todo.activeForm ?? undefined,
             })
           );
           state.updateTodoTasks(id, todos);
         }
 
+        // Capture inter-agent messages
+        if (toolName === 'SendMessage' && event.tool_input?.content && event.tool_input?.recipient) {
+          state.addChatMessage({
+            timestamp: Date.now(),
+            agentName: name,
+            content: event.tool_input.content,
+            type: 'agent-to-agent',
+            recipient: event.tool_input.recipient,
+          });
+        }
+
         state.addChatMessage({
           timestamp: Date.now(),
-          agentName: id,
+          agentName: name,
           content: action,
           type: 'tool-use',
         });
@@ -159,9 +174,10 @@ export function createHooksRouter(state: StateManager): Router {
 
       case 'Stop': {
         state.updateAgentStatus(id, 'stopped', null, null);
+        const name = state.getAgent(id)?.name ?? id;
         state.addChatMessage({
           timestamp: Date.now(),
-          agentName: id,
+          agentName: name,
           content: `Session stopped`,
           type: 'system',
         });
@@ -170,9 +186,10 @@ export function createHooksRouter(state: StateManager): Router {
 
       case 'Notification': {
         if (event.message) {
+          const name = state.getAgent(id)?.name ?? id;
           state.addChatMessage({
             timestamp: Date.now(),
-            agentName: id,
+            agentName: name,
             content: event.message,
             type: 'system',
           });

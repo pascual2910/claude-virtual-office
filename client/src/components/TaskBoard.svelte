@@ -1,18 +1,15 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { officeState } from '../state/store.svelte';
   import type { TaskState } from '../../../shared/types';
 
-  const statusColors: Record<string, string> = {
-    pending: '#6b7280',
-    in_progress: '#3b82f6',
-    completed: '#10b981',
-  };
+  let currentTime = $state(Date.now());
+  let timer: ReturnType<typeof setInterval> | null = null;
 
-  const statusLabels: Record<string, string> = {
-    pending: 'Pending',
-    in_progress: 'In Progress',
-    completed: 'Completed',
-  };
+  onMount(() => {
+    timer = setInterval(() => { currentTime = Date.now(); }, 1000);
+    return () => { if (timer) clearInterval(timer); };
+  });
 
   let pendingTasks = $derived(
     officeState.tasks.filter((t: TaskState) => t.status === 'pending')
@@ -26,13 +23,43 @@
 
   function getOwnerColor(owner: string | null): string {
     if (!owner) return '#6b7280';
-    // Generate a consistent color from the owner name
     let hash = 0;
     for (let i = 0; i < owner.length; i++) {
       hash = owner.charCodeAt(i) + ((hash << 5) - hash);
     }
     const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#ec4899'];
     return colors[Math.abs(hash) % colors.length];
+  }
+
+  function timeSince(timestamp: number | undefined): string {
+    if (!timestamp) return '';
+    const seconds = Math.floor((currentTime - timestamp) / 1000);
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m ago`;
+  }
+
+  function elapsed(timestamp: number | undefined): string {
+    if (!timestamp) return '';
+    const seconds = Math.floor((currentTime - timestamp) / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
+  }
+
+  function duration(start: number | undefined, end: number | undefined): string {
+    if (!start || !end) return '';
+    const seconds = Math.floor((end - start) / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
   }
 </script>
 
@@ -48,15 +75,18 @@
       {#each pendingTasks as task (task.id)}
         <div class="task-card">
           <p class="task-text">{task.content}</p>
-          {#if task.owner}
-            <div class="flex items-center gap-1.5 mt-2">
+          <div class="flex items-center gap-1.5 mt-2">
+            {#if task.owner}
               <span
                 class="w-2 h-2 rounded-full"
                 style="background-color: {getOwnerColor(task.owner)}"
               ></span>
               <span class="task-owner">{task.owner}</span>
-            </div>
-          {/if}
+            {/if}
+            {#if task.createdAt}
+              <span class="task-time">{timeSince(task.createdAt)}</span>
+            {/if}
+          </div>
         </div>
       {:else}
         <p class="task-empty">No pending tasks</p>
@@ -77,15 +107,18 @@
           <p class="task-text task-text-active">
             {task.activeForm || task.content}
           </p>
-          {#if task.owner}
-            <div class="flex items-center gap-1.5 mt-2">
+          <div class="flex items-center gap-1.5 mt-2">
+            {#if task.owner}
               <span
                 class="w-2 h-2 rounded-full"
                 style="background-color: {getOwnerColor(task.owner)}"
               ></span>
               <span class="task-owner-active">{task.owner}</span>
-            </div>
-          {/if}
+            {/if}
+            {#if task.startedAt}
+              <span class="task-time task-time-active">{elapsed(task.startedAt)}</span>
+            {/if}
+          </div>
         </div>
       {:else}
         <p class="task-empty">No active tasks</p>
@@ -106,15 +139,18 @@
           <p class="task-text-completed">
             {task.content}
           </p>
-          {#if task.owner}
-            <div class="flex items-center gap-1.5 mt-2">
+          <div class="flex items-center gap-1.5 mt-2">
+            {#if task.owner}
               <span
                 class="w-2 h-2 rounded-full opacity-50"
                 style="background-color: {getOwnerColor(task.owner)}"
               ></span>
               <span class="task-owner-completed">{task.owner}</span>
-            </div>
-          {/if}
+            {/if}
+            {#if task.startedAt && task.completedAt}
+              <span class="task-time">{duration(task.startedAt, task.completedAt)}</span>
+            {/if}
+          </div>
         </div>
       {:else}
         <p class="task-empty">No completed tasks</p>
@@ -203,5 +239,16 @@
 
   .task-card-completed {
     opacity: 0.6;
+  }
+
+  .task-time {
+    font-size: 0.625rem;
+    font-family: ui-monospace, monospace;
+    color: var(--vo-text-muted);
+    margin-left: auto;
+  }
+
+  .task-time-active {
+    color: var(--vo-primary);
   }
 </style>

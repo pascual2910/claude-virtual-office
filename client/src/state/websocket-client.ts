@@ -5,6 +5,7 @@ import {
   updateTasks,
   addChatMessage,
   updateTeam,
+  updateProjectPath,
   setConnected,
   recordStatusChange,
   soundState,
@@ -87,6 +88,9 @@ function handleMessage(msg: WsMessage): void {
       break;
     case 'team-changed':
       updateTeam(msg.teamName, msg.agents);
+      break;
+    case 'project-path':
+      updateProjectPath(msg.path);
       break;
   }
 }

@@ -163,6 +163,10 @@ export async function startServer(options: ServerOptions): Promise<void> {
     broadcast({ type: 'team-changed', teamName: name, agents });
   });
 
+  stateManager.on('project-path', (path) => {
+    broadcast({ type: 'project-path', path });
+  });
+
   // File watcher
   const fileWatcher = new FileWatcher(claudeDir);
 
@@ -205,9 +209,10 @@ export async function startServer(options: ServerOptions): Promise<void> {
             : '';
 
       if (content) {
+        const sessionId = entry.session_id ?? 'agent';
         const msg: ChatMessage = {
           timestamp: Date.now(),
-          agentName: entry.session_id ?? 'agent',
+          agentName: stateManager.getAgent(sessionId)?.name ?? sessionId,
           content: content.slice(0, 500),
           type: 'agent-message',
         };

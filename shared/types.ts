@@ -57,17 +57,22 @@ export interface TaskState {
   status: 'pending' | 'in_progress' | 'completed';
   owner: string | null;
   activeForm?: string;
+  createdAt?: number;
+  startedAt?: number;
+  completedAt?: number;
 }
 
 export interface ChatMessage {
   timestamp: number;
   agentName: string;
   content: string;
-  type: 'agent-message' | 'tool-use' | 'system' | 'user-sent';
+  type: 'agent-message' | 'tool-use' | 'system' | 'user-sent' | 'agent-to-agent';
+  recipient?: string;
 }
 
 export interface VirtualOfficeState {
   teamName: string | null;
+  projectPath: string | null;
   agents: AgentState[];
   tasks: TaskState[];
   chatLog: ChatMessage[];
@@ -80,7 +85,8 @@ export type WsMessage =
   | { type: 'agent-updated'; agent: AgentState }
   | { type: 'tasks-updated'; tasks: TaskState[] }
   | { type: 'chat-message'; message: ChatMessage }
-  | { type: 'team-changed'; teamName: string | null; agents: AgentState[] };
+  | { type: 'team-changed'; teamName: string | null; agents: AgentState[] }
+  | { type: 'project-path'; path: string | null };
 
 // Hook event from Claude Code
 export interface HookEvent {

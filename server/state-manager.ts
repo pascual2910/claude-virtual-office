@@ -14,6 +14,26 @@ import { friendlyName } from './friendly-names.js';
 const MAX_CHAT_LOG = 500;
 const MAX_RECENT_FILES = 20;
 
+interface TaskTimestamps {
+  prevStatus: string;
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
+}
+
+function commonDirPrefix(paths: string[]): string | null {
+  if (paths.length === 0) return null;
+  const segments = paths.map(p => p.split('/'));
+  const common: string[] = [];
+  for (let i = 0; i < segments[0].length; i++) {
+    if (segments.every(s => s[i] === segments[0][i])) {
+      common.push(segments[0][i]);
+    } else break;
+  }
+  // Need at least 3 segments to be meaningful (e.g. /Users/name/project)
+  return common.length >= 3 ? common.join('/') : null;
+}
+
 // Grid layout constants
 const GRID_START_X = 150;
 const GRID_START_Y = 150;
@@ -35,11 +55,13 @@ export interface StateManagerEvents {
   'tasks-updated': [tasks: TaskState[]];
   'chat-message': [message: ChatMessage];
   'team-changed': [teamName: string | null, agents: AgentState[]];
+  'project-path': [path: string];
 }
 
 export class StateManager extends EventEmitter<StateManagerEvents> {
   private state: VirtualOfficeState = {
     teamName: null,
+    projectPath: null,
     agents: [],
     tasks: [],
     chatLog: [],
@@ -49,6 +71,12 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
   // Two task sources — merged on every update
   private _fileTasks: Map<string, TaskState[]> = new Map();
   private _todoTasks: Map<string, TaskState[]> = new Map();
+
+  // Track task timestamps across status transitions
+  private _taskTimestamps: Map<string, TaskTimestamps> = new Map();
+
+  // All file paths seen, for project path detection
+  private _allFilePaths: Set<string> = new Set();
 
   /**
    * Set (or replace) the active team and create AgentState entries for each member.
@@ -141,6 +169,16 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
       agent.recentFiles = agent.recentFiles.slice(0, MAX_RECENT_FILES);
     }
 
+    // Detect project path from file activity
+    if (filePath.startsWith('/')) {
+      this._allFilePaths.add(filePath);
+      const detected = commonDirPrefix([...this._allFilePaths]);
+      if (detected && detected !== this.state.projectPath) {
+        this.state.projectPath = detected;
+        this.emit('project-path', detected);
+      }
+    }
+
     this.emit('agent-updated', agent);
   }
 
@@ -168,6 +206,32 @@ export class StateManager extends EventEmitter<StateManagerEvents> {
     for (const tasks of this._todoTasks.values()) {
       merged.push(...tasks);
     }
+
+    // Stamp timestamps based on status transitions
+    const now = Date.now();
+    for (const task of merged) {
+      let ts = this._taskTimestamps.get(task.id);
+      if (!ts) {
+        ts = { prevStatus: task.status, createdAt: task.createdAt ?? now };
+        this._taskTimestamps.set(task.id, ts);
+      }
+
+      // Detect status transitions
+      if (task.status === 'in_progress' && ts.prevStatus !== 'in_progress') {
+        ts.startedAt = task.startedAt ?? now;
+      }
+      if (task.status === 'completed' && ts.prevStatus !== 'completed') {
+        ts.completedAt = task.completedAt ?? now;
+        if (!ts.startedAt) ts.startedAt = ts.createdAt;
+      }
+      ts.prevStatus = task.status;
+
+      // Apply timestamps to the task
+      task.createdAt = ts.createdAt;
+      if (ts.startedAt) task.startedAt = ts.startedAt;
+      if (ts.completedAt) task.completedAt = ts.completedAt;
+    }
+
     this.state.tasks = merged;
     this.emit('tasks-updated', this.state.tasks);
     this.emit('state-changed');

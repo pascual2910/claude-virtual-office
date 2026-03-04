@@ -11,6 +11,7 @@ import { getThemeById } from '../themes';
 function createDefaultState(): VirtualOfficeState {
   return {
     teamName: null,
+    projectPath: null,
     agents: [],
     tasks: [],
     chatLog: [],
@@ -27,10 +28,15 @@ export const selection: { agentId: string | null } = $state({ agentId: null });
 
 export function updateFullState(state: VirtualOfficeState): void {
   officeState.teamName = state.teamName;
+  officeState.projectPath = state.projectPath;
   officeState.agents = state.agents;
   officeState.tasks = state.tasks;
   officeState.chatLog = state.chatLog;
   officeState.connected = state.connected;
+}
+
+export function updateProjectPath(path: string | null): void {
+  officeState.projectPath = path;
 }
 
 export function updateAgent(agent: AgentState): void {

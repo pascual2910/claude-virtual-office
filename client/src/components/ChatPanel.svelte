@@ -28,7 +28,7 @@
   let filteredMessages = $derived(
     officeState.chatLog.filter((msg: ChatMessage) => {
       if (activeFilter === 'all') return true;
-      if (activeFilter === 'messages') return msg.type === 'agent-message' || msg.type === 'user-sent';
+      if (activeFilter === 'messages') return msg.type === 'agent-message' || msg.type === 'user-sent' || msg.type === 'agent-to-agent';
       if (activeFilter === 'tools') return msg.type === 'tool-use';
       if (activeFilter === 'system') return msg.type === 'system';
       return true;
@@ -116,7 +116,26 @@
           {formatTime(msg.timestamp)}
         </span>
 
-        {#if msg.type === 'agent-message' || msg.type === 'user-sent'}
+        {#if msg.type === 'agent-to-agent'}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1">
+              <span
+                class="text-xs font-semibold"
+                style="color: {getAgentColor(msg.agentName)}"
+              >
+                {msg.agentName}
+              </span>
+              <span class="text-[10px]" style="color: var(--vo-text-muted)">&rarr;</span>
+              <span
+                class="text-xs font-semibold"
+                style="color: {getAgentColor(msg.recipient ?? '')}"
+              >
+                {msg.recipient}
+              </span>
+            </div>
+            <p class="text-sm break-words" style="color: var(--vo-text)">{msg.content}</p>
+          </div>
+        {:else if msg.type === 'agent-message' || msg.type === 'user-sent'}
           <div class="flex-1 min-w-0">
             <span
               class="text-xs font-semibold"
