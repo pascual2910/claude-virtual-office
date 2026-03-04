@@ -1,14 +1,39 @@
 {
   "name": "claude-virtual-office",
   "displayName": "Claude Virtual Office",
-  "description": "Visual dashboard for monitoring Claude Code agent teams",
-  "version": "1.0.0",
+  "description": "Visual dashboard for monitoring Claude Code agent teams — see agents at desks, track tasks, and send messages in real time.",
+  "version": "1.0.1",
   "publisher": "pascual",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pascual2910/claude-virtual-office"
+  },
+  "homepage": "https://github.com/pascual2910/claude-virtual-office#readme",
+  "bugs": {
+    "url": "https://github.com/pascual2910/claude-virtual-office/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "agent",
+    "virtual-office",
+    "dashboard",
+    "AI",
+    "team",
+    "monitoring"
+  ],
+  "galleryBanner": {
+    "color": "#0f172a",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Visualization"
+    "Visualization",
+    "Other"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -17,12 +42,14 @@
       {
         "command": "claude-virtual-office.open",
         "title": "Open Claude Virtual Office",
-        "category": "Claude"
+        "category": "Claude",
+        "icon": "$(window)"
       },
       {
         "command": "claude-virtual-office.openExternal",
         "title": "Open Claude Virtual Office in Browser",
-        "category": "Claude"
+        "category": "Claude",
+        "icon": "$(link-external)"
       }
     ],
     "configuration": {
@@ -32,6 +59,16 @@
           "type": "number",
           "default": 3377,
           "description": "Port the Virtual Office server is running on"
+        },
+        "claudeVirtualOffice.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically start the server when opening the panel (requires projectPath to be set)"
+        },
+        "claudeVirtualOffice.projectPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the claude-virtual-office project directory (used for auto-start)"
         }
       }
     }
